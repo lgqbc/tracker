@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#27ae60">
+    <title>Consumption Tracker</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2327ae60'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%2327ae60'/%3E%3C/svg%3E">
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiQ29uc3VtcHRpb24gVHJhY2tlciIsInNob3J0X25hbWUiOiJUcmFja2VyIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiMyN2FlNjAiLCJ0aGVtZV9jb2xvciI6IiMyN2FlNjAiLCJpY29ucyI6W3sic3JjIjoiZGF0YTppbWFnZS9zdmcreG1sLCUzQ3N2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxOTIgMTkyJyUzRSUzQ3JlY3Qgd2lkdGg9JzE5MicgaGVpZ2h0PScxOTInIGZpbGw9JyUyMzI3YWU2MCcvJTNFJTNDL3N2ZyUzRSIsInNpemVzIjoiMTkyeDE5MiIsInR5cGUiOiJpbWFnZS9zdmcreG1sIn0seyJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWwsJTNDc3ZnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zycgdmlld0JveD0nMCAwIDUxMiA1MTInJTNFJTNDcmVjdCB3aWR0aD0nNTEyJyBoZWlnaHQ9JzUxMicgZmlsbD0nJTIzMjdhZTYwJy8lM0UlM0Mvc3ZnJTNFIiwic2l6ZXMiOiI1MTJ4NTEyIiwidHlwZSI6ImltYWdlL3N2Zyt4bWwifV19">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #ecf0f1;
+            padding: 10px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        @media (min-width: 480px) {
+            body {
+                padding: 20px;
+            }
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        @media (min-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Setup Screen */
+        .setup-screen {
+            text-align: center;
+        }
+
+        .setup-screen p {
+            color: #555;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .setup-screen label {
+            display: block;
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .setup-screen input {
+            width: 100px;
+            padding: 10px;
+            font-size: 18px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        button:hover {
+            background: #229954;
+        }
+
+        button.secondary {
+            background: #95a5a6;
+            margin-top: 10px;
+        }
+
+        button.secondary:hover {
+            background: #7f8c8d;
+        }
+
+        button.danger {
+            background: #e74c3c;
+        }
+
+        button.danger:hover {
+            background: #c0392b;
+        }
+
+        /* Calendar */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-header h2 {
+            color: #2c3e50;
+            font-size: 20px;
+        }
+
+        .calendar-header button {
+            padding: 8px 16px;
+            font-size: 14px;
+            background: #95a5a6;
+        }
+
+        .calendar-header button:hover {
+            background: #7f8c8d;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        @media (min-width: 480px) {
+            .calendar-grid {
+                gap: 8px;
+            }
+        }
+
+        .day-label {
+            text-align: center;
+            font-weight: 600;
+            color: #7f8c8d;
+            padding: 8px;
+            font-size: 12px;
+        }
+
+        .day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            position: relative;
+            background: white;
+            border: 2px solid #ecf0f1;
+            transition: all 0.2s;
+        }
+
+        .day .day-number {
+            position: relative;
+            z-index: 1;
+        }
+
+        .day.other-month {
+            color: #999;
+        }
+
+        .day.empty {
+            cursor: default;
+            background: transparent;
+            border: none;
+        }
+
+        .day.green {
+            background: #d5f4e6;
+            border-color: #27ae60;
+        }
+
+        .day.red {
+            background: #fadbd8;
+            border-color: #e74c3c;
+        }
+
+        .day.today {
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .day.consumed::after {
+            content: 'X';
+            position: absolute;
+            font-size: clamp(20px, 8vw, 80px);
+            font-weight: bold;
+            color: #e74c3c;
+            opacity: 0.4;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+            pointer-events: none;
+            line-height: 1;
+        }
+
+        .day.past:not(.consumed) {
+            opacity: 0.25;
+        }
+
+        .day.consumed.past {
+            background: #fadbd8;
+            border-color: #e74c3c;
+            opacity: 0.25;
+        }
+
+        .day.consumed.red {
+            background: #fadbd8;
+            border-color: #e74c3c;
+        }
+
+        .day:not(.empty):hover {
+            opacity: 0.8;
+        }
+
+        .settings-btn {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .modal-content h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .modal-content p {
+            color: #555;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .modal-content input {
+            width: 100px;
+            padding: 10px;
+            font-size: 18px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: stretch;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            margin: 0;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Setup Screen -->
+        <div id="setupScreen" class="setup-screen hidden">
+            <h1>Consumption Tracker</h1>
+            <p>Set your consumption interval to start tracking.</p>
+            <label for="intervalInput">Days between consumption:</label>
+            <input type="number" id="intervalInput" min="1" value="7">
+            <br>
+            <button onclick="saveInterval()">Start Tracking</button>
+            
+            <div style="margin-top: 25px; padding-top: 20px; border-top: 2px solid #ecf0f1;">
+                <p style="color: #555; line-height: 1.6; font-size: 14px;">
+                    <strong>Tap days</strong> to mark consumption with an <strong style="color: #e74c3c;">X</strong><br>
+                    <strong style="color: #27ae60;">Green</strong> = OK to consume · <strong style="color: #e74c3c;">Red</strong> = Wait longer
+                </p>
+            </div>
+        </div>
+
+        <!-- Calendar Screen -->
+        <div id="calendarScreen" class="hidden">
+            <h1>Consumption Tracker</h1>
+            
+            <button class="settings-btn secondary" onclick="openSettings()" id="intervalButton">Interval: 7 Days</button>
+            
+            <div class="calendar-header">
+                <button onclick="previousMonth()">◀</button>
+                <h2 id="monthYear"></h2>
+                <button onclick="nextMonth()">▶</button>
+            </div>
+
+            <div class="calendar-grid" id="calendar"></div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <h3>Change Interval</h3>
+            <p>Changing your rules will recalculate all days based on the new rules.</p>
+            <label for="newIntervalInput">Interval days:</label>
+            <input type="number" id="newIntervalInput" min="1" value="7">
+            <div class="modal-buttons">
+                <button class="danger" onclick="confirmChangeInterval()">Change</button>
+                <button class="secondary" onclick="closeSettings()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let state = {
+            interval: null,
+            consumedDates: [], // Array of date strings in YYYY-MM-DD format
+            currentMonth: new Date().getMonth(),
+            currentYear: new Date().getFullYear()
+        };
+
+        // Touch swipe detection
+        let touchStartX = 0;
+        let touchEndX = 0;
+        let touchStartY = 0;
+        let touchEndY = 0;
+
+        // Initialize
+        function init() {
+            loadState();
+            if (state.interval === null) {
+                document.getElementById('setupScreen').classList.remove('hidden');
+            } else {
+                document.getElementById('calendarScreen').classList.remove('hidden');
+                renderCalendar();
+            }
+        }
+
+        // Local Storage
+        function saveState() {
+            localStorage.setItem('consumptionTracker', JSON.stringify({
+                interval: state.interval,
+                consumedDates: state.consumedDates
+            }));
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('consumptionTracker');
+            if (saved) {
+                const data = JSON.parse(saved);
+                state.interval = data.interval;
+                state.consumedDates = data.consumedDates || [];
+            }
+        }
+
+        // Setup
+        function saveInterval() {
+            const interval = parseInt(document.getElementById('intervalInput').value);
+            if (interval && interval > 0) {
+                state.interval = interval;
+                saveState();
+                document.getElementById('setupScreen').classList.add('hidden');
+                document.getElementById('calendarScreen').classList.remove('hidden');
+                renderCalendar();
+            }
+        }
+
+        // Settings
+        function openSettings() {
+            document.getElementById('newIntervalInput').value = state.interval;
+            document.getElementById('settingsModal').classList.add('active');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('active');
+        }
+
+        function confirmChangeInterval() {
+            const newInterval = parseInt(document.getElementById('newIntervalInput').value);
+            if (newInterval && newInterval > 0) {
+                state.interval = newInterval;
+                saveState();
+                closeSettings();
+                renderCalendar();
+            }
+        }
+
+        // Calendar Navigation
+        function previousMonth() {
+            state.currentMonth--;
+            if (state.currentMonth < 0) {
+                state.currentMonth = 11;
+                state.currentYear--;
+            }
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            state.currentMonth++;
+            if (state.currentMonth > 11) {
+                state.currentMonth = 0;
+                state.currentYear++;
+            }
+            renderCalendar();
+        }
+
+        // Date Utilities
+        function dateToString(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function stringToDate(str) {
+            return new Date(str + 'T00:00:00');
+        }
+
+        function isSameDay(date1, date2) {
+            return dateToString(date1) === dateToString(date2);
+        }
+
+        function isConsumedDate(date) {
+            return state.consumedDates.includes(dateToString(date));
+        }
+
+        function toggleConsumption(date) {
+            const dateStr = dateToString(date);
+            const index = state.consumedDates.indexOf(dateStr);
+            
+            if (index > -1) {
+                state.consumedDates.splice(index, 1);
+            } else {
+                state.consumedDates.push(dateStr);
+            }
+            
+            saveState();
+            renderCalendar();
+        }
+
+        // Calendar Logic
+        function getDayStatus(date) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // Check if date is in the past (but not today)
+            const isPast = date < today;
+            
+            // If this day is consumed
+            if (isConsumedDate(date)) {
+                // If it's in the past, treat as past
+                if (isPast) {
+                    return 'consumed-past';
+                }
+                // If consumed and not past, it should be red
+                return 'consumed-red';
+            }
+
+            // Find the most recent consumption date before this date (not including this date)
+            const sortedConsumed = state.consumedDates
+                .map(str => stringToDate(str))
+                .filter(d => d < date)
+                .sort((a, b) => b - a);
+
+            let color;
+            if (sortedConsumed.length === 0) {
+                // No consumption yet, all days are green
+                color = 'green';
+            } else {
+                const lastConsumed = sortedConsumed[0];
+                const daysSinceConsumption = Math.floor((date - lastConsumed) / (1000 * 60 * 60 * 24));
+
+                // Interval of N means you must wait N full days
+                // Example: consume on Monday (day 0), with 2-day interval
+                // Tuesday = day 1 (red) - only 1 day has passed
+                // Wednesday = day 2 (red) - only 2 days have passed
+                // Thursday = day 3 (green) - more than 2 days have passed ✓
+                if (daysSinceConsumption > state.interval) {
+                    color = 'green';
+                } else {
+                    color = 'red';
+                }
+            }
+
+            // If in the past, add past status but keep the color
+            if (isPast) {
+                return color + '-past';
+            }
+            
+            return color;
+        }
+
+        // Render Calendar
+        function renderCalendar() {
+            const calendar = document.getElementById('calendar');
+            const monthYear = document.getElementById('monthYear');
+            const intervalButton = document.getElementById('intervalButton');
+            
+            // Update interval button
+            intervalButton.textContent = `Interval: ${state.interval} Day${state.interval !== 1 ? 's' : ''}`;
+            
+            // Set header
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                              'July', 'August', 'September', 'October', 'November', 'December'];
+            monthYear.textContent = `${monthNames[state.currentMonth]} ${state.currentYear}`;
+
+            // Clear calendar
+            calendar.innerHTML = '';
+
+            // Day labels
+            const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            dayLabels.forEach(label => {
+                const div = document.createElement('div');
+                div.className = 'day-label';
+                div.textContent = label;
+                calendar.appendChild(div);
+            });
+
+            // Get first day of month and number of days
+            const firstDay = new Date(state.currentYear, state.currentMonth, 1);
+            const lastDay = new Date(state.currentYear, state.currentMonth + 1, 0);
+            const numDays = lastDay.getDate();
+            // Convert Sunday=0 to Monday=0 system (0=Mon, 1=Tue, ..., 6=Sun)
+            let startingDayOfWeek = firstDay.getDay() - 1;
+            if (startingDayOfWeek === -1) startingDayOfWeek = 6; // Sunday becomes 6
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Calculate days from previous month to show
+            const prevMonthLastDay = new Date(state.currentYear, state.currentMonth, 0);
+            const prevMonthDays = prevMonthLastDay.getDate();
+            const prevMonthYear = state.currentMonth === 0 ? state.currentYear - 1 : state.currentYear;
+            const prevMonth = state.currentMonth === 0 ? 11 : state.currentMonth - 1;
+
+            // Days from previous month
+            for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+                const day = prevMonthDays - i;
+                const date = new Date(prevMonthYear, prevMonth, day);
+                const div = createDayElement(date, day, today, true);
+                calendar.appendChild(div);
+            }
+
+            // Days of current month
+            for (let day = 1; day <= numDays; day++) {
+                const date = new Date(state.currentYear, state.currentMonth, day);
+                const div = createDayElement(date, day, today, false);
+                calendar.appendChild(div);
+            }
+
+            // Calculate how many days we need from next month to fill 6 rows (42 total cells)
+            const totalCells = 42; // 6 rows * 7 days
+            const cellsUsed = startingDayOfWeek + numDays;
+            const nextMonthDays = totalCells - cellsUsed;
+            const nextMonthYear = state.currentMonth === 11 ? state.currentYear + 1 : state.currentYear;
+            const nextMonth = state.currentMonth === 11 ? 0 : state.currentMonth + 1;
+
+            // Days from next month
+            for (let day = 1; day <= nextMonthDays; day++) {
+                const date = new Date(nextMonthYear, nextMonth, day);
+                const div = createDayElement(date, day, today, true);
+                calendar.appendChild(div);
+            }
+        }
+
+        function createDayElement(date, day, today, isOtherMonth) {
+            const div = document.createElement('div');
+            div.className = 'day';
+            div.textContent = day;
+
+            if (isOtherMonth) {
+                div.classList.add('other-month');
+            }
+
+            // Check if today
+            if (isSameDay(date, today)) {
+                div.classList.add('today');
+            }
+
+            // Check status
+            const status = getDayStatus(date);
+            
+            if (status === 'consumed-past') {
+                div.classList.add('consumed', 'past');
+            } else if (status === 'consumed-red') {
+                div.classList.add('consumed', 'red');
+            } else if (status === 'red-past') {
+                div.classList.add('red', 'past');
+            } else if (status === 'green-past') {
+                div.classList.add('green', 'past');
+            } else if (status === 'red') {
+                div.classList.add('red');
+            } else if (status === 'green') {
+                div.classList.add('green');
+            }
+
+            // Add click handler
+            div.onclick = () => toggleConsumption(date);
+
+            return div;
+        }
+
+        // Start the app
+        init();
+
+        // Add touch event listeners for swipe gestures
+        document.addEventListener('touchstart', handleTouchStart, false);
+        document.addEventListener('touchend', handleTouchEnd, false);
+
+        function handleTouchStart(e) {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }
+
+        function handleTouchEnd(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            handleSwipe();
+        }
+
+        function handleSwipe() {
+            const swipeThreshold = 50; // minimum distance for swipe
+            const swipeDistanceX = touchEndX - touchStartX;
+            const swipeDistanceY = Math.abs(touchEndY - touchStartY);
+            
+            // Only trigger swipe if horizontal movement is greater than vertical
+            if (Math.abs(swipeDistanceX) > swipeThreshold && swipeDistanceY < 100) {
+                if (swipeDistanceX > 0) {
+                    // Swipe right - go to previous month
+                    previousMonth();
+                } else {
+                    // Swipe left - go to next month
+                    nextMonth();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
