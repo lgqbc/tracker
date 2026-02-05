@@ -49,6 +49,7 @@
             color: #2c3e50;
             margin-bottom: 20px;
             text-align: center;
+            font-size: 24px;
         }
 
         /* Setup Screen */
@@ -80,7 +81,7 @@
         }
 
         button {
-            background: #27ae60;
+            background: #5a7a5a;
             color: white;
             border: none;
             padding: 12px 30px;
@@ -91,7 +92,7 @@
         }
 
         button:hover {
-            background: #229954;
+            background: #4a6a4a;
         }
 
         button.secondary {
@@ -188,13 +189,13 @@
         }
 
         .day.green {
-            background: #d5f4e6;
-            border-color: #27ae60;
+            background: #d9e8d9;
+            border-color: #5a7a5a;
         }
 
         .day.red {
-            background: #fadbd8;
-            border-color: #e74c3c;
+            background: #f0d9d9;
+            border-color: #8b4545;
         }
 
         .day.today {
@@ -208,10 +209,10 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 100%;
+            width: 85%;
             height: 8px;
-            background-color: #e74c3c;
-            opacity: 0.7;
+            background-color: #8b4545;
+            opacity: 0.5;
             border-radius: 2px;
         }
         
@@ -222,20 +223,40 @@
         .day.consumed::after {
             transform: translate(-50%, -50%) rotate(-45deg);
         }
+        
+        /* Grey X for consumed green days (allowed consumption) */
+        .day.consumed.green::before {
+            background-color: #999999;
+            width: 85%;
+            height: 8px;
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+        
+        .day.consumed.green::after {
+            background-color: #999999;
+            width: 85%;
+            height: 8px;
+            transform: translate(-50%, -50%) rotate(-45deg);
+        }
 
         .day.past:not(.consumed) {
-            opacity: 0.25;
+            opacity: 0.45;
         }
 
         .day.consumed.past {
-            background: #fadbd8;
-            border-color: #e74c3c;
-            opacity: 0.25;
+            background: #f0d9d9;
+            border-color: #8b4545;
+            opacity: 0.45;
         }
 
         .day.consumed.red {
-            background: #fadbd8;
-            border-color: #e74c3c;
+            background: #f0d9d9;
+            border-color: #8b4545;
+        }
+        
+        .day.consumed.green {
+            background: #f0d9d9;
+            border-color: #8b4545;
         }
 
         .day:not(.empty):hover {
@@ -245,6 +266,22 @@
         .settings-btn {
             width: 100%;
             margin-bottom: 20px;
+        }
+        
+        .settings-btn.green-state {
+            background: #5a7a5a;
+        }
+        
+        .settings-btn.green-state:hover {
+            background: #4a6a4a;
+        }
+        
+        .settings-btn.red-state {
+            background: #8b4545;
+        }
+        
+        .settings-btn.red-state:hover {
+            background: #7a3838;
         }
 
         /* Modal */
@@ -366,6 +403,7 @@
         let state = {
             interval: null,
             consumedDates: [], // Array of date strings in YYYY-MM-DD format
+            consumptionMeta: {}, // Metadata for each consumption {dateStr: {wasGreen: boolean}}
             currentMonth: new Date().getMonth(),
             currentYear: new Date().getFullYear()
         };
@@ -391,7 +429,8 @@
         function saveState() {
             localStorage.setItem('consumptionTracker', JSON.stringify({
                 interval: state.interval,
-                consumedDates: state.consumedDates
+                consumedDates: state.consumedDates,
+                consumptionMeta: state.consumptionMeta || {}
             }));
         }
 
@@ -401,6 +440,7 @@
                 const data = JSON.parse(saved);
                 state.interval = data.interval;
                 state.consumedDates = data.consumedDates || [];
+                state.consumptionMeta = data.consumptionMeta || {};
             }
         }
 
@@ -430,10 +470,48 @@
             const newInterval = parseInt(document.getElementById('newIntervalInput').value);
             if (newInterval && newInterval > 0) {
                 state.interval = newInterval;
+                
+                // Recalculate ALL consumption metadata with the new interval
+                recalculateAllConsumptionMetaWithNewInterval();
+                
                 saveState();
                 closeSettings();
                 renderCalendar();
             }
+        }
+        
+        function recalculateAllConsumptionMetaWithNewInterval() {
+            // Sort consumed dates chronologically
+            const sortedDates = state.consumedDates
+                .map(str => ({ str, date: stringToDate(str) }))
+                .sort((a, b) => a.date - b.date);
+            
+            // Recalculate metadata for each consumption based on new interval
+            const newMeta = {};
+            
+            for (let i = 0; i < sortedDates.length; i++) {
+                const currentDateStr = sortedDates[i].str;
+                const currentDate = sortedDates[i].date;
+                
+                // Check what consumptions came BEFORE this one
+                const previousConsumptions = sortedDates
+                    .slice(0, i)
+                    .map(d => d.date);
+                
+                let wasGreen;
+                if (previousConsumptions.length === 0) {
+                    wasGreen = true; // First consumption is always green
+                } else {
+                    // Find most recent consumption before this one
+                    const lastConsumed = previousConsumptions[previousConsumptions.length - 1];
+                    const daysSinceConsumption = Math.floor((currentDate - lastConsumed) / (1000 * 60 * 60 * 24));
+                    wasGreen = daysSinceConsumption > state.interval;
+                }
+                
+                newMeta[currentDateStr] = { wasGreen: wasGreen };
+            }
+            
+            state.consumptionMeta = newMeta;
         }
 
         // Calendar Navigation
@@ -472,14 +550,111 @@
             return state.consumedDates.includes(dateToString(date));
         }
 
+        function recalculateAllConsumptionMeta(preserveExisting = true) {
+            // Sort consumed dates chronologically
+            const sortedDates = state.consumedDates
+                .map(str => ({ str, date: stringToDate(str) }))
+                .sort((a, b) => a.date - b.date);
+            
+            // Recalculate metadata for each consumption
+            const newMeta = {};
+            
+            for (let i = 0; i < sortedDates.length; i++) {
+                const currentDateStr = sortedDates[i].str;
+                const currentDate = sortedDates[i].date;
+                
+                // If we're preserving existing metadata and this date has it, keep it
+                if (preserveExisting && state.consumptionMeta && state.consumptionMeta[currentDateStr]) {
+                    newMeta[currentDateStr] = state.consumptionMeta[currentDateStr];
+                    continue;
+                }
+                
+                // Check what consumptions came BEFORE this one
+                const previousConsumptions = sortedDates
+                    .slice(0, i)
+                    .map(d => d.date);
+                
+                let wasGreen;
+                if (previousConsumptions.length === 0) {
+                    wasGreen = true; // First consumption is always green
+                } else {
+                    // Find most recent consumption before this one
+                    const lastConsumed = previousConsumptions[previousConsumptions.length - 1];
+                    const daysSinceConsumption = Math.floor((currentDate - lastConsumed) / (1000 * 60 * 60 * 24));
+                    wasGreen = daysSinceConsumption > state.interval;
+                }
+                
+                newMeta[currentDateStr] = { wasGreen: wasGreen };
+            }
+            
+            state.consumptionMeta = newMeta;
+        }
+
+        function recalculateConsumptionsAfter(changedDateStr) {
+            // Only recalculate consumptions that come AFTER the changed date
+            const changedDate = stringToDate(changedDateStr);
+            
+            // Sort all consumed dates chronologically
+            const sortedDates = state.consumedDates
+                .map(str => ({ str, date: stringToDate(str) }))
+                .sort((a, b) => a.date - b.date);
+            
+            for (let i = 0; i < sortedDates.length; i++) {
+                const currentDateStr = sortedDates[i].str;
+                const currentDate = sortedDates[i].date;
+                
+                // Skip dates before or equal to the changed date - they keep their metadata
+                if (currentDate <= changedDate) {
+                    continue;
+                }
+                
+                // Recalculate metadata for dates AFTER the changed date
+                const previousConsumptions = sortedDates
+                    .slice(0, i)
+                    .map(d => d.date);
+                
+                let wasGreen;
+                if (previousConsumptions.length === 0) {
+                    wasGreen = true;
+                } else {
+                    const lastConsumed = previousConsumptions[previousConsumptions.length - 1];
+                    const daysSinceConsumption = Math.floor((currentDate - lastConsumed) / (1000 * 60 * 60 * 24));
+                    wasGreen = daysSinceConsumption > state.interval;
+                }
+                
+                state.consumptionMeta[currentDateStr] = { wasGreen: wasGreen };
+            }
+        }
+
         function toggleConsumption(date) {
             const dateStr = dateToString(date);
             const index = state.consumedDates.indexOf(dateStr);
             
             if (index > -1) {
+                // Remove consumption
                 state.consumedDates.splice(index, 1);
+                // Remove its metadata
+                if (state.consumptionMeta && state.consumptionMeta[dateStr]) {
+                    delete state.consumptionMeta[dateStr];
+                }
+                // Recalculate all consumptions after this date
+                recalculateConsumptionsAfter(dateStr);
             } else {
+                // BEFORE adding, capture what status the getDayStatus function returns
+                const currentStatus = getDayStatus(date);
+                const wasGreen = currentStatus.includes('green');
+                
+                // Add consumption
                 state.consumedDates.push(dateStr);
+                
+                // Store this specific date's metadata (permanent unless recalculated)
+                if (!state.consumptionMeta) {
+                    state.consumptionMeta = {};
+                }
+                state.consumptionMeta[dateStr] = { wasGreen: wasGreen };
+                
+                // Recalculate all consumptions after this date
+                recalculateConsumptionsAfter(dateStr);
             }
             
             saveState();
@@ -494,48 +669,40 @@
             // Check if date is in the past (but not today)
             const isPast = date < today;
             
-            // If this day is consumed
+            const dateStr = dateToString(date);
+            
+            // If this day is consumed, use stored metadata
             if (isConsumedDate(date)) {
-                // If it's in the past, treat as past
+                const meta = state.consumptionMeta && state.consumptionMeta[dateStr];
+                const wasGreen = meta ? meta.wasGreen : true; // Default to green for old data
+                
                 if (isPast) {
-                    return 'consumed-past';
+                    return wasGreen ? 'consumed-past-green' : 'consumed-past-red';
                 }
-                // If consumed and not past, it should be red
-                return 'consumed-red';
+                return wasGreen ? 'consumed-green' : 'consumed-red';
             }
 
-            // Find the most recent consumption date before this date (not including this date)
+            // For non-consumed days, calculate current color based on ALL consumptions
             const sortedConsumed = state.consumedDates
                 .map(str => stringToDate(str))
                 .filter(d => d < date)
                 .sort((a, b) => b - a);
 
-            let color;
+            let baseColor;
             if (sortedConsumed.length === 0) {
-                // No consumption yet, all days are green
-                color = 'green';
+                baseColor = 'green';
             } else {
                 const lastConsumed = sortedConsumed[0];
                 const daysSinceConsumption = Math.floor((date - lastConsumed) / (1000 * 60 * 60 * 24));
-
-                // Interval of N means you must wait N full days
-                // Example: consume on Monday (day 0), with 2-day interval
-                // Tuesday = day 1 (red) - only 1 day has passed
-                // Wednesday = day 2 (red) - only 2 days have passed
-                // Thursday = day 3 (green) - more than 2 days have passed ✓
-                if (daysSinceConsumption > state.interval) {
-                    color = 'green';
-                } else {
-                    color = 'red';
-                }
+                baseColor = daysSinceConsumption > state.interval ? 'green' : 'red';
             }
 
             // If in the past, add past status but keep the color
             if (isPast) {
-                return color + '-past';
+                return baseColor + '-past';
             }
             
-            return color;
+            return baseColor;
         }
 
         // Render Calendar
@@ -545,7 +712,46 @@
             const intervalButton = document.getElementById('intervalButton');
             
             // Update interval button
-            intervalButton.textContent = `Interval: ${state.interval} Day${state.interval !== 1 ? 's' : ''}`;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // Calculate days left until next allowed consumption
+            const sortedConsumed = state.consumedDates
+                .map(str => stringToDate(str))
+                .filter(d => d < today || isSameDay(d, today))
+                .sort((a, b) => b - a);
+            
+            let daysLeftText = '';
+            if (sortedConsumed.length > 0) {
+                const lastConsumed = sortedConsumed[0];
+                const daysSinceConsumption = Math.floor((today - lastConsumed) / (1000 * 60 * 60 * 24));
+                // Need to wait MORE than interval days, so add 1
+                const daysLeft = (state.interval + 1) - daysSinceConsumption;
+                
+                if (daysLeft > 0) {
+                    daysLeftText = ` (${daysLeft} day${daysLeft !== 1 ? 's' : ''} to go)`;
+                } else {
+                    daysLeftText = ' (0 days to go)';
+                }
+            }
+            
+            intervalButton.textContent = `Interval: ${state.interval} Day${state.interval !== 1 ? 's' : ''}${daysLeftText}`;
+            
+            // Set interval button color based on today's status
+            const todayStatus = getDayStatus(today);
+            
+            // Remove existing state classes
+            intervalButton.classList.remove('green-state', 'red-state');
+            
+            // Add appropriate state class
+            if (todayStatus.includes('consumed')) {
+                // If today is consumed (checkmark OR X), show red
+                intervalButton.classList.add('red-state');
+            } else if (todayStatus.includes('green')) {
+                intervalButton.classList.add('green-state');
+            } else if (todayStatus.includes('red')) {
+                intervalButton.classList.add('red-state');
+            }
             
             // Set header
             const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
@@ -571,9 +777,6 @@
             // Convert Sunday=0 to Monday=0 system (0=Mon, 1=Tue, ..., 6=Sun)
             let startingDayOfWeek = firstDay.getDay() - 1;
             if (startingDayOfWeek === -1) startingDayOfWeek = 6; // Sunday becomes 6
-
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
 
             // Calculate days from previous month to show
             const prevMonthLastDay = new Date(state.currentYear, state.currentMonth, 0);
@@ -628,8 +831,12 @@
             // Check status
             const status = getDayStatus(date);
             
-            if (status === 'consumed-past') {
-                div.classList.add('consumed', 'past');
+            if (status === 'consumed-past-green') {
+                div.classList.add('consumed', 'green', 'past');
+            } else if (status === 'consumed-past-red') {
+                div.classList.add('consumed', 'red', 'past');
+            } else if (status === 'consumed-green') {
+                div.classList.add('consumed', 'green');
             } else if (status === 'consumed-red') {
                 div.classList.add('consumed', 'red');
             } else if (status === 'red-past') {
